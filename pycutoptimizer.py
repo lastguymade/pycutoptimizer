@@ -1,25 +1,26 @@
-#!/usr/bin/python
+#!/usr/bin/pythoni
+from Rect import Rect
+from Vector import Vector
+from copy import copy
 
 #Tudo em mm
 
 # Formica 3,08m x 1,25m
-tamanho_da_chapa=[3080, 1250]
+sheet = Rect(-1, -1, 3080, 1250)
 
 lst_cortes=[]
-lst_cortes.append([1220, 300])
-lst_cortes.append([1220, 300])
-lst_cortes.append([1220, 370])
-lst_cortes.append([1220, 370])
-lst_cortes.append([350, 300])
-lst_cortes.append([350, 300])
-lst_cortes.append([1220, 70])
-lst_cortes.append([1220, 70])
-lst_cortes.append([350, 70])
-lst_cortes.append([350, 70])
+lst_cortes.append(Rect(-1, -1, 1220, 300))
+lst_cortes.append(Rect(-1, -1, 1220, 300))
+lst_cortes.append(Rect(-1, -1, 1220, 370))
+lst_cortes.append(Rect(-1, -1, 1220, 370))
+lst_cortes.append(Rect(-1, -1, 350, 300))
+lst_cortes.append(Rect(-1, -1, 350, 300))
+lst_cortes.append(Rect(-1, -1, 1220, 70))
+lst_cortes.append(Rect(-1, -1, 1220, 70))
+lst_cortes.append(Rect(-1, -1, 350, 70))
+lst_cortes.append(Rect(-1, -1, 350, 70))
 
 # INICIO NAO MECHER
-import Rect
-
 def AreaComparator(a, b):
 	area1 = a.width * a.height
 	area2 = b.width * b.height
@@ -29,63 +30,62 @@ def AreaComparator(a, b):
 def PositionComparator(a, b):
 	return (a.y < b.y) or ((a.y == b.y) and ((a.x < b.x) or ((a.x == b.x) and ((a.height > b.height) or ((a.height == b.height) and (a.width > b.width))))))
 
-area_chapa = tamanho_da_chapa[0] * tamanho_da_chapa[1]
+vctCuts = Vector(lst_cortes, AreaComparator)
 
-area_total_cortes = 0
-for corte in lst_cortes:
-	corte.append(corte[0] * corte[1])
-	corte.append(-1)
-	corte.append(-1)
-	area_total_cortes += corte[2]
+sheet_area = sheet.width * sheet.height
 
-lst_cortes = sorted(lst_cortes, key=lambda corte: corte[2], reverse=True)
+total_cut_area = 0
+for cut in vctCuts:
+	total_cut_area += (cut.width * cut.height)
 
-print "Area chapa: " + str(area_chapa) + " mm2"
-print "Area dos cortes: " + str(area_total_cortes) + " mm2"
+print "Area chapa: " + str(sheet_area) + " mm2"
+print "Area dos cortes: " + str(total_cut_area) + " mm2"
 
-posicionamento = [[tamanho_da_chapa[0], tamanho_da_chapa[1], 0, 0]]
-for corte in lst_cortes:
+gaps = Vector([Rect(0, 0, sheet.width, sheet.height)], PositionComparator)
+for cut in vctCuts:
+	#g = Vector([Rect(-1, -1, 0, 0)], PositionComparator)
+	#g = copy(gaps)
+
 	last = False
-	for posicao in posicionamento:
-		if ((posicao[0] >= corte[0]) and (posicao[1] >= corte[1])):
+	for g in gaps:
+		if ((g.width >= cut.width) and (g.height >= cut.height)):
 			break
 		last = True
 
 	if not last:
-		corte[3] = posicao[2]
-		corte[4] = posicao[3]
+		cut.x = g.x
+		cut.y = g.y
 		
-		pos = iter(posicionamento)
-		posicao = pos.next()
 		count = 0
-		while True:
-			print str(corte[3] + corte[0] - 1) + " < " + str(posicao[2])
-			print str(corte[4] + corte[1] - 1) + " < " + str(posicao[3])
-			print str(corte[3]) + " > " + str(posicao[2] + posicao[0] - 1)
-			print str(corte[4]) + " > " + str(posicao[3] + posicao[1] - 1)
-			
-			if (not ((corte[3] + corte[0] - 1 < posicao[2]) or (corte[4] + corte[1] - 1 < posicao[3]) or (corte[3] > posicao[2] + posicao[0] - 1) or (corte[4] > posicao[3] + posicao[1] - 1))):
-				if (posicao[2] < corte[3]):
+		while (count < len(gaps)):
+			g = gaps[count]
+			if (not((cut.right() < g.x) or (cut.bottom() < g.y) or (cut.x > g.right()) or (cut.y > g.bottom()))):
+				print "AQUI"
+				# Add a gap to the left of the new rectangle if possible
+				print g
+				print cut
+				if (g.x < cut.x):
 					print "AQUI1"
-					posicionamento.append([corte[3] - posicao[2], posicao[3], posicao[2], posicao[3]])
-				if (posicao[3] < corte[4]):
-					print "AQUI2"
-					posicionamento.append([corte[3], corte[4] - posicao[3], posicao[2], posicao[3]])
-				if (posicao[2] + posicao[0] - 1 > corte[3] + corte[0] - 1):
-					print "AQUI3"
-					posicionamento.append([(posicao[2] + posicao[0] - 1) - (corte[3] + corte[0] - 1), posicao[1], (corte[3] + corte[0] - 1) + 1, posicao[3]])
+					gaps.__add__(Rect(g.x, g.y, cut.x - g.x, g.height))
 
-				if (posicao[3] + posicao[1] - 1 > corte[4] + corte[1] - 1):
+				# Add a gap on top of the new rectangle if possible
+				if (g.y < cut.y):
+					print "AQUI2"
+					gaps.__add__(Rect(g.x, g.y, g.width, cut.y - g.y))
+
+				# Add a gap to the right of the new rectangle if possible
+				if (g.right() > cut.right()):
+					print "AQUI3"
+					gaps.__add__(Rect(cut.right() + 1, g.y, g.right() - cut.right(), g.height))
+
+				# Add a gap below the new rectangle if possible
+				if (g.bottom() > cut.bottom()):
 					print "AQUI4"
-					posicionamento.append([posicao[0], (posicao[3] + posicao[1] - 1) - (corte[4] + corte[1] - 1), posicao[3], (corte[4] + corte[1] - 1) + 1])
-				posicionamento.pop(count)
+					gaps.__add__(Rect(g.x, cut.bottom() + 1, g.width, g.bottom() - cut.bottom()))
+
+				gaps.erase(count)
 				count += 1
 			else:
-				print "AQUI5"
-				try:
-					pos.next()
-				except StopIteration:
-					break
-
-print posicionamento
-print lst_cortes
+				count += 1
+for cut in vctCuts:
+	print cut

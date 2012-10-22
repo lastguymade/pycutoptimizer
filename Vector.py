@@ -21,6 +21,9 @@ class Vector:
 	def __setitem__(self, key, item):
 		self.data[key] = item
 
+	def erase(self, key):
+		self.data.pop(key)
+
 	def __len__(self):
 		return len(self.data)
 
